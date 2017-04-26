@@ -1,7 +1,6 @@
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
-import java.text.Normalizer;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Comparator;
@@ -10,7 +9,6 @@ import java.util.List;
 import java.util.Map.Entry;
 import java.util.Set;
 import java.util.ArrayList;
-import java.util.regex.Pattern;
 
 
 
@@ -57,10 +55,10 @@ public class WordCount {
 			int v2 = e2.getValue();
 			String k1 = e1.getKey();
 			String k2 = e2.getKey();
-			if (v1 < v2)					return 0;
-			else if (v1 > v2)				return 1;
-			else if(k1.compareTo(k2) < 0)	return 0;	// v1 == v2
-			else							return 1;
+			
+			if (v1 < v2)					return 1;
+			else if (v1 > v2)				return -1;
+			else return k1.compareTo(k2);	// v1 == v2
 		}
 	};
 
