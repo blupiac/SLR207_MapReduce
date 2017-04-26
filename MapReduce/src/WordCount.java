@@ -1,9 +1,11 @@
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Comparator;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map.Entry;
@@ -16,19 +18,27 @@ public class WordCount {
 
 	private String fileContent;
 	private HashMap<String, Integer> count = new HashMap<String, Integer>();
+	private HashSet<String> stopwords;
 
 	// http://www.java67.com/2015/01/how-to-sort-hashmap-in-java-based-on.html
 	LinkedHashMap<String, Integer> sorted;
 	Set<Entry<String, Integer>> mappings;
 	
-	public WordCount(String path) {
+	public WordCount(String path, String stopPath) {
+		
+		String stopwordContent = null;
+		
 		try {
 			fileContent = readFile(path);
+			stopwordContent = readFile(stopPath);
 		} catch (IOException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
-
+		
+		String[] stopwordsArray = stopwordContent.split("\\s+");
+		stopwords = new HashSet<String>(Arrays.asList(stopwordsArray));
+		
 		countWords();
 		
 		// Sort method needs a List, so let's first convert Set to List in Java 
@@ -80,11 +90,11 @@ public class WordCount {
 			String word = words[i].replaceAll("[^\\p{L}\\p{Nd}]+", "").toLowerCase();
 			word = word.replaceAll("^[\\s\\.\\d]+", "");
 			
-			if(count.containsKey(word) && !word.matches(".*\\d+.*"))
+			if(count.containsKey(word) && !word.matches(".*\\d+.*") && !stopwords.contains(word))
 			{
 				count.put(word, count.get(word) + 1);
 			}
-			else if(!word.matches(".*\\d+.*"))
+			else if(!word.matches(".*\\d+.*") && !stopwords.contains(word))
 			{
 				count.put(word, 1);
 			}
