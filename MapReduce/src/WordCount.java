@@ -4,6 +4,7 @@ import java.nio.file.Paths;
 import java.util.HashMap;
 
 
+
 public class WordCount {
 
 	private String fileContent;
@@ -35,21 +36,31 @@ public class WordCount {
 		
 		for(int i = 0; i < words.length; i++)
 		{
-			if(count.containsKey(words[i]))
+			// http://stackoverflow.com/questions/21946042/remove-all-spaces-and-punctuation-anything-not-a-letter-from-a-string
+			String word = words[i].replaceAll("[^A-Za-z]+", "").toLowerCase();
+
+			if(count.containsKey(word))
 			{
-				count.put(words[i], count.get(words[i]) + 1);
+				count.put(word, count.get(word) + 1);
 			}
 			else
 			{
-				count.put(words[i], 1);
+				count.put(word, 1);
 			}
 		}
 	}
 	
-	public void showResult()
+	public void showResult(boolean ordered)
 	{
-		for (String name: count.keySet()){
-	        System.out.println(name + " : " + count.get(name));
-		} 
+		if(ordered)
+		{
+			
+		}
+		else
+		{
+			for (String name: count.keySet()){
+		        System.out.println(name + " : " + count.get(name));
+			} 
+		}
 	}
 }
