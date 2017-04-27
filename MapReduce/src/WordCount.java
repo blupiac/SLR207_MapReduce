@@ -13,7 +13,6 @@ import java.util.Set;
 import java.util.ArrayList;
 
 
-
 public class WordCount {
 
 	private String fileContent;
@@ -86,15 +85,24 @@ public class WordCount {
 
 		for(int i = 0; i < words.length; i++)
 		{
+			String word = words[i];
+			// enleve tout avant apostrophes
+			word = word.replaceAll(".*'", "");
 			// http://stackoverflow.com/questions/1611979/remove-all-non-word-characters-from-a-string-in-java-leaving-accented-charact
-			String word = words[i].replaceAll("[^\\p{L}\\p{Nd}]+", "").toLowerCase();
+			word = word.replaceAll("[^\\p{L}\\p{Nd}]+", "").toLowerCase();
+			// enleve nombres et caracteres speciaux
 			word = word.replaceAll("^[\\s\\.\\d]+", "");
 			
-			if(count.containsKey(word) && !word.matches(".*\\d+.*") && !stopwords.contains(word))
+			if(word.matches(".*\\d+.*") || stopwords.contains(word) || word.length() < 2)
+			{
+				continue;
+			}
+			
+			if(count.containsKey(word))
 			{
 				count.put(word, count.get(word) + 1);
 			}
-			else if(!word.matches(".*\\d+.*") && !stopwords.contains(word))
+			else
 			{
 				count.put(word, 1);
 			}
@@ -112,19 +120,31 @@ public class WordCount {
 	    return str;
 	}
 */
-	public void showResult(boolean ordered)
+	// ordered: if results need to be ordered
+	// numShown: number of entries to be shown, 0 shows all entries
+	public void showResult(boolean ordered, int numShown)
 	{
+		HashMap<String, Integer> target;
+		int i = 1;
+		
 		if(ordered)
 		{
-			for (String name: sorted.keySet()){
-				System.out.println(name + " : " + count.get(name));
-			}
+			target = sorted;
 		}
 		else
 		{
-			for (String name: count.keySet()){
-				System.out.println(name + " : " + count.get(name));
-			} 
+			target = count;
+		}
+		
+		for (String name: target.keySet())
+		{
+			System.out.println(name + " : " + count.get(name));
+			i++;
+			
+			if(i == numShown)
+			{
+				break;
+			}
 		}
 	}
 }

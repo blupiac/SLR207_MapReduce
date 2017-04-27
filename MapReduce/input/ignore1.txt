@@ -111,6 +111,12 @@ fur
 hormis
 hors
 huit
+ier
+ii
+iii
+iv
+vi
+vii
 il
 ils
 j'
@@ -144,6 +150,7 @@ mr
 même
 mêmes
 n'
+ne
 neuf
 ni
 non-
