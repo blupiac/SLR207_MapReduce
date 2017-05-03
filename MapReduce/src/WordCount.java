@@ -36,9 +36,6 @@ public class WordCount {
 			e.printStackTrace();
 		}
 		
-		String[] wordsArray = fileContent.split("\\s+");
-		words = new ArrayList<String>(Arrays.asList(wordsArray));
-		
 		String[] stopwordsArray = stopwordContent.split("\\s+");
 		stopwords = new HashSet<String>(Arrays.asList(stopwordsArray));
 		
