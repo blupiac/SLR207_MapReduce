@@ -18,6 +18,7 @@ public class WordCount {
 	private String fileContent;
 	private HashMap<String, Integer> count = new HashMap<String, Integer>();
 	private HashSet<String> stopwords;
+	private ArrayList<String> words;
 
 	// http://www.java67.com/2015/01/how-to-sort-hashmap-in-java-based-on.html
 	LinkedHashMap<String, Integer> sorted;
@@ -35,23 +36,11 @@ public class WordCount {
 			e.printStackTrace();
 		}
 		
+		String[] wordsArray = fileContent.split("\\s+");
+		words = new ArrayList<String>(Arrays.asList(wordsArray));
+		
 		String[] stopwordsArray = stopwordContent.split("\\s+");
 		stopwords = new HashSet<String>(Arrays.asList(stopwordsArray));
-		
-		countWords();
-		
-		// Sort method needs a List, so let's first convert Set to List in Java 
-		List<Entry<String, Integer>> listOfEntries = new ArrayList<Entry<String, Integer>>(count.entrySet());
-		
-		// sorting HashMap by values using comparator 
-		Collections.sort(listOfEntries, valueComparator);
-		sorted = new LinkedHashMap<String, Integer>(listOfEntries.size());
-		
-		// copying entries from List to Map 
-		for(Entry<String, Integer> entry : listOfEntries)
-		{
-			sorted.put(entry.getKey(), entry.getValue());
-		}
 		
 	}
 	
@@ -78,8 +67,50 @@ public class WordCount {
 		byte[] encoded = Files.readAllBytes(Paths.get(path));
 		return new String(encoded);
 	}
+	
+	public void filterWords()
+	{
+		
+		// enleve tout avant apostrophes
+		//fileContent = fileContent.replaceAll(".*'", "");
+		// http://stackoverflow.com/questions/1611979/remove-all-non-word-characters-from-a-string-in-java-leaving-accented-charact
+		//fileContent = fileContent.replaceAll("[^\\p{L}\\p{Nd}]+", "");
+		
+		// enleve nombres et caracteres speciaux
+		fileContent = fileContent.replaceAll("^[\\s\\.\\d]+", "").toLowerCase();
+		
+		String[] wordsArray = fileContent.split("\\s+");
+		words = new ArrayList<String>(Arrays.asList(wordsArray));
+		
+		for (int i = 0; i < words.size(); i ++) 
+		{
+			words.set(i, words.get(i).replaceAll(".*'", ""));
+			// http://stackoverflow.com/questions/1611979/remove-all-non-word-characters-from-a-string-in-java-leaving-accented-charact
+			words.set(i, words.get(i).replaceAll("[^\\p{L}\\p{Nd}]+", ""));
+			
+			if(stopwords.contains(words.get(i)) || words.get(i).length() < 2)
+			{
+				words.remove(i);
+			}
+		}
+		
+	}
 
-	private void countWords()
+	public void countWords()
+	{
+		for (String word: words) {
+			if(count.containsKey(word))
+			{
+				count.put(word, count.get(word) + 1);
+			}
+			else
+			{
+				count.put(word, 1);
+			}
+		}
+	}
+	
+	public void countWordsWithFilter()
 	{
 		String[] words = fileContent.split("\\s+");
 
@@ -109,17 +140,23 @@ public class WordCount {
 		}
 	}
 	
-	// http://stackoverflow.com/questions/1453171/remove-diacritical-marks-
-	// %C5%84-%C7%B9-%C5%88-%C3%B1-%E1%B9%85-%C5%86-%E1%B9%87-%E1%B9%8B-%E1%B9%89-%CC%88-%C9%B2-%C6%9E-%E1%B6%87-%C9%B3-%C8%B5-from-unicode-chars
-/*	public static final Pattern DIACRITICS_AND_FRIENDS
-	    = Pattern.compile("[\\p{InCombiningDiacriticalMarks}\\p{IsLm}\\p{IsSk}]+");
-	
-	private static String stripDiacritics(String str) {
-	    str = Normalizer.normalize(str, Normalizer.Form.NFD);
-	    str = DIACRITICS_AND_FRIENDS.matcher(str).replaceAll("");
-	    return str;
+	public void sortResult()
+	{
+		// Sort method needs a List, so let's first convert Set to List in Java 
+		List<Entry<String, Integer>> listOfEntries = new ArrayList<Entry<String, Integer>>(count.entrySet());
+		
+		// sorting HashMap by values using comparator 
+		Collections.sort(listOfEntries, valueComparator);
+		sorted = new LinkedHashMap<String, Integer>(listOfEntries.size());
+		
+		// copying entries from List to Map 
+		for(Entry<String, Integer> entry : listOfEntries)
+		{
+			sorted.put(entry.getKey(), entry.getValue());
+		}
 	}
-*/
+	
+	
 	// ordered: if results need to be ordered
 	// numShown: number of entries to be shown, 0 shows all entries
 	public void showResult(boolean ordered, int numShown)
