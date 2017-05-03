@@ -16,9 +16,9 @@ public class main {
 		long filtertTime = System.currentTimeMillis();
 		System.out.println("Filter time: " + (filtertTime  - loadTime) + "ms");*/
 		
-		wc.countWordsWithFilter();
+		//wc.countWordsWithFilter();
 		
-		//wc.countWords();
+		wc.countWords();
 		
 		long countTime = System.currentTimeMillis();
 		System.out.println("Count time: " + (countTime  - loadTime) + "ms");
@@ -28,7 +28,7 @@ public class main {
 		long sortTime   = System.currentTimeMillis();
 		System.out.println("Sort time: " + (sortTime - countTime) + "ms");
 		
-		//wc.showResult(true, 50);
+		wc.showResult(true, 50);
 		
 		long endTime   = System.currentTimeMillis();
 		System.out.println("Total time: " + (endTime - startTime) + "ms");

@@ -95,6 +95,9 @@ public class WordCount {
 
 	public void countWords()
 	{
+		String[] wordsArray = fileContent.split("\\s+");
+		words = new ArrayList<String>(Arrays.asList(wordsArray));		
+		
 		for (String word: words) {
 			if(count.containsKey(word))
 			{
