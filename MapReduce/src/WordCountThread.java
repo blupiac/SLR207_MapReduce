@@ -1,4 +1,5 @@
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -17,21 +18,35 @@ public class WordCountThread extends Thread {
 	private HashSet<String> stopwords;
 	private ArrayList<String> words;
 	
-	public WordCountThread() {
-
+	public WordCountThread(HashSet<String> stopwords, ArrayList<String> words) {
+		this.words = words;
+		this.stopwords = stopwords;
 	}
 
-	public WordCountThread(Runnable arg0) {
+	public WordCountThread(Runnable arg0, HashSet<String> stopwords, ArrayList<String> words) {
 		super(arg0);
+		this.words = words;
+		this.stopwords = stopwords;
 	}
 
-	public WordCountThread(String arg0) {
+	public WordCountThread(String arg0, HashSet<String> stopwords, ArrayList<String> words) {
 		super(arg0);
+		this.words = words;
+		this.stopwords = stopwords;
 	}
-	
-	private void loadContent(String path, String stopPath)
-	{
-		
+
+	public void countWords()
+	{			
+		for (String word: words) {
+			if(count.containsKey(word))
+			{
+				count.put(word, count.get(word) + 1);
+			}
+			else
+			{
+				count.put(word, 1);
+			}
+		}
 	}
 
 }
