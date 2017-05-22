@@ -32,7 +32,6 @@ public class WordCount {
 			fileContent = readFile(path);
 			stopwordContent = readFile(stopPath);
 		} catch (IOException e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
 		
@@ -43,7 +42,6 @@ public class WordCount {
 	
 	Comparator<Entry<String, Integer>> valueComparator = new Comparator<Entry<String,Integer>>()
 	{ 
-		@Override
 		public int compare(Entry<String, Integer> e1, Entry<String, Integer> e2)
 		{
 			int v1 = e1.getValue();

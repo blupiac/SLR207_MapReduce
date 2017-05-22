@@ -5,8 +5,8 @@ public class main {
 	{
 		long startTime = System.currentTimeMillis();
 		
-		WordCount wc = new WordCount("/cal/homes/blupiac/workspace/MapReduce/input/santPub.txt",
-										"/cal/homes/blupiac/workspace/MapReduce/input/ignore1.txt");
+		WordCount wc = new WordCount( "/home/blupiac/workspace/SLR207/input/forestMayotte.txt",
+										"/home/blupiac/workspace/SLR207/input/ignore1.txt");
 		
 		long loadTime = System.currentTimeMillis();
 		System.out.println("Load time: " + (loadTime - startTime) + "ms");
@@ -32,5 +32,7 @@ public class main {
 		
 		long endTime   = System.currentTimeMillis();
 		System.out.println("Total time: " + (endTime - startTime) + "ms");
+		
+		//System.out.println(Runtime.getRuntime().availableProcessors());
 	}
 }
