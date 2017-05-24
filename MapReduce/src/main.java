@@ -5,8 +5,8 @@ public class main {
 	{
 		long startTime = System.currentTimeMillis();
 		
-		WordCount wc = new WordCount( "/home/blupiac/workspace/SLR207/input/forestMayotte.txt",
-										"/home/blupiac/workspace/SLR207/input/ignore1.txt");
+		WordCount wc = new WordCount( "input/web.wet",
+										"input/ignore1.txt");
 		
 		long loadTime = System.currentTimeMillis();
 		System.out.println("Load time: " + (loadTime - startTime) + "ms");
@@ -18,7 +18,7 @@ public class main {
 		
 		//wc.countWordsWithFilter();
 		
-		wc.countWords();
+		wc.countWordsParallel();
 		
 		long countTime = System.currentTimeMillis();
 		System.out.println("Count time: " + (countTime  - loadTime) + "ms");
@@ -28,7 +28,7 @@ public class main {
 		long sortTime   = System.currentTimeMillis();
 		System.out.println("Sort time: " + (sortTime - countTime) + "ms");
 		
-		wc.showResult(true, 50);
+		//wc.showResult(true, 50);
 		
 		long endTime   = System.currentTimeMillis();
 		System.out.println("Total time: " + (endTime - startTime) + "ms");

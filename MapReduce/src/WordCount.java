@@ -6,11 +6,18 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.Comparator;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
 import java.util.ArrayList;
+import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 
 
 public class WordCount {
@@ -63,6 +70,25 @@ public class WordCount {
 		return new String(encoded);
 	}
 	
+	public int[] splitString(int fragments)
+	{
+		int size = fileContent.length();
+		
+		int[] result = new int[fragments + 1];
+		result[0] = 0;
+		
+		for(int i = 1; i < fragments; i++)
+		{
+			result[i] = i * size / fragments;
+			while(fileContent.charAt(result[i]) != ' ')
+				result[i]--;
+		}
+		
+		result[fragments] = size;
+		
+		return result;
+	}
+	
 	public void filterWords()
 	{
 		
@@ -106,6 +132,85 @@ public class WordCount {
 				count.put(word, 1);
 			}
 		}
+	}
+	
+	private HashMap<String, Integer> countWords(String s)
+	{
+		String[] wordsArray = s.split("\\s+");
+		HashMap<String, Integer> result = new HashMap<String, Integer>();
+		words = new ArrayList<String>(Arrays.asList(wordsArray));		
+		
+		for (String word: words) {
+			if(result.containsKey(word))
+			{
+				result.put(word, result.get(word) + 1);
+			}
+			else
+			{
+				result.put(word, 1);
+			}
+		}
+		
+		return result;
+	}
+	
+	public void countWordsParallel()
+	{
+		int procs = Runtime.getRuntime().availableProcessors() - 1;
+		
+		final int[] i = new int[procs];
+		for(int j = 0; j < procs; j ++) {i[j] = j;}
+		
+		final int[] idx = splitString(procs);
+		
+		List<Callable<HashMap<String, Integer> > > tasks = 
+				new ArrayList<Callable<HashMap<String, Integer> > >();
+		
+		for (final int j : i) {
+            Callable<HashMap<String, Integer> > c = new Callable<HashMap<String, Integer> >() {
+                @Override
+                public HashMap<String, Integer> call() throws Exception {
+                    return countWords(fileContent.substring(idx[j], idx[j+1]));
+                }
+            };
+            tasks.add(c);
+        }
+		
+		final ExecutorService pool = Executors.newFixedThreadPool(procs);
+		
+		try {
+			
+            List<Future<HashMap<String, Integer> > > results = pool.invokeAll(tasks);
+            
+            for (Future<HashMap<String, Integer> > partialCount : results) {
+            	
+            	for (Map.Entry<String, Integer> entry : partialCount.get().entrySet())
+            	{
+            		
+            		if(count.containsKey(entry.getKey()))
+        			{
+        				count.put(entry.getKey(), count.get(entry.getKey()) + entry.getValue());
+        			}
+        			else
+        			{
+        				count.put(entry.getKey(), entry.getValue());
+        			}
+            	}
+            	
+            }
+        
+		} catch (InterruptedException e) {
+			e.printStackTrace();
+		} catch (ExecutionException e) {
+			e.printStackTrace();
+		} finally {
+            pool.shutdown();
+        }		
+		
+		
+		
+		
+		
 	}
 	
 	public void countWordsWithFilter()
