@@ -21,7 +21,11 @@ public class main {
 	public static void main(String[] args)
 	{
 		List<String> working = new ArrayList<String>();
+		ArrayList<Process> procs = new ArrayList<Process>(); 
+		ArrayList<Process> dummy = new ArrayList<Process>();
 
+		long startTime = System.currentTimeMillis();
+		
 		try {
 			fileContent = readFile("input/machines.txt");
 		} catch (IOException e) {
@@ -36,7 +40,7 @@ public class main {
 					"blupiac@" + word,
 					"hostname");
 
-			List<String> result = runProcess(pb, 5);
+			List<String> result = runProcess(pb, 5, dummy);
 			String name = result.get(0);
 
 			if(name == null || !name.toLowerCase().equals(word.toLowerCase()))
@@ -52,7 +56,7 @@ public class main {
 		}
 
 		int i = 0;
-		createSplits(working.size(), "input/deontPolNatio.txt");
+		createSplits(working.size(), "input/allDreams.txt");
 
 		PrintWriter out;
 		try {
@@ -60,52 +64,34 @@ public class main {
 
 			for (String word : working){
 
-				ProcessBuilder pb = new ProcessBuilder("ssh", 
-						"blupiac@" + word,
-						"cd /tmp ; rm -rf blupiac");
+				ProcessBuilder pb = new ProcessBuilder("ssh", "blupiac@" + word,
+						"cd /tmp ; rm -rf blupiac ; mkdir -p blupiac ;" +
+						"cd /tmp/blupiac ; mkdir -p splits ; mkdir -p maps");
 
-				runProcess(pb, 5);
-
-				pb = new ProcessBuilder("ssh", 
-						"blupiac@" + word,
-						"cd /tmp ; mkdir -p blupiac");
-
-				runProcess(pb, 5);
-
-				pb = new ProcessBuilder("ssh", 
-						"blupiac@" + word,
-						"cd /tmp/blupiac ; mkdir -p splits");
-
-				runProcess(pb, 5);
-
-				pb = new ProcessBuilder("ssh", 
-						"blupiac@" + word,
-						"cd /tmp/blupiac ; mkdir -p maps");
-
-				runProcess(pb, 5);			
+				runProcess(pb, 5, dummy);			
 
 				pb = new ProcessBuilder("scp", 
 						"-pr",
 						"input/SLAVE.jar",
 						"blupiac@" + word + ":/tmp/blupiac/");
 
-				runProcess(pb, 5);
+				runProcess(pb, 5, dummy);
 
 				pb = new ProcessBuilder("scp", 
 						"-pr",
 						"output/S" + i +".spl",
 						"blupiac@" + word + ":/tmp/blupiac/splits/");
 
-				runProcess(pb, 5);
+				runProcess(pb, 5, dummy);
 				
 				pb = new ProcessBuilder("ssh", 
 						"blupiac@" + word,
 						"cd /tmp/blupiac ; java -jar SLAVE.jar splits/S" + i +".spl");
 
 				List<String> keys = new ArrayList<String>();
-				keys = runProcess(pb, 5);	
+				keys = runProcess(pb, 5, procs);
 				updateDictKeys(keys, "UM"+i);
-				
+
 				out.println("UM" + i + " - " + word);
 
 				i++;
@@ -114,11 +100,23 @@ public class main {
 			out.close();
 
 		} catch (FileNotFoundException e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
 		
-		printDictKeys(dictKeys);
+		for (Process proc : procs){
+			try {
+				proc.waitFor();
+			} catch (InterruptedException e) {
+				e.printStackTrace();
+			}
+		}
+		
+		System.out.println("MAP phase done.");
+		
+		//printDictKeys(dictKeys);
+		
+		long endTime   = System.currentTimeMillis();
+		System.out.println("Total time: " + (endTime - startTime) + "ms");
 
 	}
 
@@ -155,9 +153,9 @@ public class main {
 		return new String(encoded);
 	}
 
-	private static List<String> runProcess(ProcessBuilder p, long TIMEOUT)
+	private static List<String> runProcess(ProcessBuilder p, long TIMEOUT, ArrayList<Process> procs)
 	{
-		List<String> result = new ArrayList<String>();;
+		List<String> result = new ArrayList<String>();
 
 		BlockingQueue<String> standardBQ = new ArrayBlockingQueue<String>(1024);
 		BlockingQueue<String> errorBQ = new ArrayBlockingQueue<String>(1024);
@@ -166,6 +164,8 @@ public class main {
 
 			Process process = p.start();
 
+			procs.add(process);
+			
 			InputStream is = process.getInputStream();
 			StreamReader standardReader = new StreamReader(standardBQ, is);
 
