@@ -7,6 +7,7 @@ import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Map.Entry;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.TimeUnit;
@@ -51,7 +52,7 @@ public class main {
 		}
 
 		int i = 0;
-		createSplits(working.size(), "input/santPub.txt");
+		createSplits(working.size(), "input/deontPolNatio.txt");
 
 		PrintWriter out;
 		try {
@@ -116,6 +117,8 @@ public class main {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
+		
+		printDictKeys(dictKeys);
 
 	}
 
@@ -134,6 +137,13 @@ public class main {
 				dictKeys.put(key, machines);
 			}
 			
+		}
+	}
+	
+	private static void printDictKeys(HashMap<String, List<String> > dictKeys)
+	{
+		for (Entry<String, List<String> > e : dictKeys.entrySet()) {
+		    System.out.println("Word: " + e.getKey() + ", Machines: " + e.getValue());			
 		}
 	}
 	
