@@ -56,7 +56,7 @@ public class main {
 		}
 
 		int i = 0;
-		createSplits(working.size(), "input/allDreams.txt");
+		createSplits(working.size(), "input/santPub.txt");
 
 		PrintWriter out;
 		try {
@@ -66,7 +66,7 @@ public class main {
 
 				ProcessBuilder pb = new ProcessBuilder("ssh", "blupiac@" + word,
 						"cd /tmp ; rm -rf blupiac ; mkdir -p blupiac ;" +
-						"cd /tmp/blupiac ; mkdir -p splits ; mkdir -p maps");
+						"cd /tmp/blupiac ; mkdir -p splits ; mkdir -p maps ; mkdir -p dicts");
 
 				runProcess(pb, 5, dummy);			
 
@@ -86,7 +86,7 @@ public class main {
 				
 				pb = new ProcessBuilder("ssh", 
 						"blupiac@" + word,
-						"cd /tmp/blupiac ; java -jar SLAVE.jar splits/S" + i +".spl");
+						"cd /tmp/blupiac ; java -jar SLAVE.jar 0 splits/S" + i +".spl");
 
 				List<String> keys = new ArrayList<String>();
 				keys = runProcess(pb, 5, procs);
@@ -111,9 +111,47 @@ public class main {
 			}
 		}
 		
-		System.out.println("MAP phase done.");
+		//******************************************************************
+		//********************** MAP PHASE ENDED ***************************
+		//******************************************************************
 		
-		//printDictKeys(dictKeys);
+		PrintWriter dictKeysWriter;
+		try {
+			
+			dictKeysWriter = new PrintWriter("output/keyDict.txt");
+			printDictKeys(dictKeys, dictKeysWriter);
+			
+		} catch (FileNotFoundException e) {
+			e.printStackTrace();
+		}
+		
+		// Passing keys to machine shuffling
+		ProcessBuilder pb = new ProcessBuilder("scp", 
+				"-pr",
+				"output/keyDict.txt",
+				"blupiac@" + working.get(0) + ":/tmp/blupiac/dicts/");
+		
+		runProcess(pb, 5, dummy);
+		
+		pb = new ProcessBuilder("scp", 
+				"-pr",
+				"output/machineDict.txt",
+				"blupiac@" + working.get(0) + ":/tmp/blupiac/dicts/");
+		
+		runProcess(pb, 5, dummy);
+		
+		// putting maps in first machine
+		for (i = 1; i < working.size(); i++){
+			System.out.println(working.get(i));
+			pb = new ProcessBuilder("scp", 
+					"-pr",
+					"blupiac@" + working.get(i) + ":/tmp/blupiac/maps/UM" + i + ".txt",
+					"blupiac@" + working.get(0) + ":/tmp/blupiac/maps/");
+			
+			runProcess(pb, 5, dummy);
+			
+		}
+
 		
 		long endTime   = System.currentTimeMillis();
 		System.out.println("Total time: " + (endTime - startTime) + "ms");
@@ -138,10 +176,10 @@ public class main {
 		}
 	}
 	
-	private static void printDictKeys(HashMap<String, List<String> > dictKeys)
+	private static void printDictKeys(HashMap<String, List<String> > dictKeys, PrintWriter pw)
 	{
 		for (Entry<String, List<String> > e : dictKeys.entrySet()) {
-		    System.out.println("Word: " + e.getKey() + ", Machines: " + e.getValue());			
+		    pw.println("Word: " + e.getKey() + ", Machines: " + e.getValue());			
 		}
 	}
 	
