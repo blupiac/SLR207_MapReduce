@@ -15,6 +15,7 @@ import java.util.concurrent.TimeUnit;
 
 public class main {
 
+	private static String inputFile = "allDreams.txt";
 	private static String fileContent;
 	private static HashMap<String, List<String>> dictKeys = new HashMap<String, List<String>>();
 	
@@ -40,23 +41,22 @@ public class main {
 					"blupiac@" + word,
 					"hostname");
 
-			List<String> result = runProcess(pb, 5, dummy);
-			String name = result.get(0);
+			List<String> result = runProcess(pb, 5, dummy, true);
 
-			if(name == null || !name.toLowerCase().equals(word.toLowerCase()))
+			if(result.isEmpty() || !result.get(0).toLowerCase().equals(word.toLowerCase()))
 			{
-				System.err.println("Machine " + result + " not responding.");
+				System.err.println("Machine " + word + " not responding.");
 				continue;
 			}
 			else
 			{
-				working.add(name);
+				working.add(result.get(0));
 			}
 
 		}
 
 		int i = 0;
-		createSplits(working.size(), "input/santPub.txt");
+		createSplits(working.size(), "input/" + inputFile, ' ', "output/S");
 
 		PrintWriter out;
 		try {
@@ -66,33 +66,33 @@ public class main {
 
 				ProcessBuilder pb = new ProcessBuilder("ssh", "blupiac@" + word,
 						"cd /tmp ; rm -rf blupiac ; mkdir -p blupiac ;" +
-						"cd /tmp/blupiac ; mkdir -p splits ; mkdir -p maps ; mkdir -p dicts");
+						"cd /tmp/blupiac ; mkdir -p splits ; mkdir -p maps ; mkdir -p dicts ; mkdir -p output");
 
-				runProcess(pb, 5, dummy);			
+				runProcess(pb, 5, dummy, true);			
 
 				pb = new ProcessBuilder("scp", 
 						"-pr",
 						"input/SLAVE.jar",
 						"blupiac@" + word + ":/tmp/blupiac/");
 
-				runProcess(pb, 5, dummy);
+				runProcess(pb, 5, dummy, true);
 
 				pb = new ProcessBuilder("scp", 
 						"-pr",
 						"output/S" + i +".spl",
 						"blupiac@" + word + ":/tmp/blupiac/splits/");
 
-				runProcess(pb, 5, dummy);
+				runProcess(pb, 5, dummy, true);
 				
 				pb = new ProcessBuilder("ssh", 
 						"blupiac@" + word,
 						"cd /tmp/blupiac ; java -jar SLAVE.jar 0 splits/S" + i +".spl");
 
 				List<String> keys = new ArrayList<String>();
-				keys = runProcess(pb, 5, procs);
+				keys = runProcess(pb, 15, procs, false);
 				updateDictKeys(keys, "UM"+i);
 
-				out.println("UM" + i + " - " + word);
+				out.println("UM" + i + " " + word);
 
 				i++;
 			}
@@ -111,11 +111,17 @@ public class main {
 			}
 		}
 		
+		System.out.println("MAP phase done.");
+		
+		long mapTime   = System.currentTimeMillis();
+		System.out.println("MAP time: " + (mapTime - startTime) + "ms");
+		
 		//******************************************************************
 		//********************** MAP PHASE ENDED ***************************
 		//******************************************************************
 		
 		PrintWriter dictKeysWriter;
+		ArrayList<Process> procsShuffleReduce = new ArrayList<Process>();
 		try {
 			
 			dictKeysWriter = new PrintWriter("output/keyDict.txt");
@@ -125,39 +131,103 @@ public class main {
 			e.printStackTrace();
 		}
 		
-		// Passing keys to machine shuffling
-		ProcessBuilder pb = new ProcessBuilder("scp", 
-				"-pr",
-				"output/keyDict.txt",
-				"blupiac@" + working.get(0) + ":/tmp/blupiac/dicts/");
+		createSplits(working.size(), "output/keyDict.txt", '\n', "output/keyDict");
 		
-		runProcess(pb, 5, dummy);
-		
-		pb = new ProcessBuilder("scp", 
-				"-pr",
-				"output/machineDict.txt",
-				"blupiac@" + working.get(0) + ":/tmp/blupiac/dicts/");
-		
-		runProcess(pb, 5, dummy);
-		
-		// putting maps in first machine
-		for (i = 1; i < working.size(); i++){
-			System.out.println(working.get(i));
+		i = 0;
+		for (String word : working){
+			
+			// Passing keys to machine shuffling
+			ProcessBuilder pb = new ProcessBuilder("scp", 
+					"-pr",
+					"output/keyDict" + i +".spl",
+					"blupiac@" + word + ":/tmp/blupiac/dicts/keyDict.txt");
+			
+			runProcess(pb, 5, dummy, true);
+			
 			pb = new ProcessBuilder("scp", 
 					"-pr",
-					"blupiac@" + working.get(i) + ":/tmp/blupiac/maps/UM" + i + ".txt",
-					"blupiac@" + working.get(0) + ":/tmp/blupiac/maps/");
+					"output/machineDict.txt",
+					"blupiac@" + word + ":/tmp/blupiac/dicts/");
 			
-			runProcess(pb, 5, dummy);
+			runProcess(pb, 5, dummy, true);
 			
+			// putting maps in first machine
+			for (int j = 0; j < working.size(); j++){
+				if(!word.equals(working.get(j)))
+				{
+					pb = new ProcessBuilder("scp", 
+							"-pr",
+							"blupiac@" + working.get(j) + ":/tmp/blupiac/maps/UM" + j + ".txt",
+							"blupiac@" + word + ":/tmp/blupiac/maps/");
+					
+					runProcess(pb, 5, dummy, true);
+				}
+			}
+			
+			// String with all umx for the shuffle command
+			String umx = "";
+			for (int j = 0; j < working.size(); j++){
+				String thisUM = "maps/UM" + j + ".txt ";
+				umx += thisUM;
+			}
+			
+			pb = new ProcessBuilder("ssh", 
+					"blupiac@" + word,
+					"cd /tmp/blupiac ; java -jar SLAVE.jar 1 " + umx);
+			
+			runProcess(pb, 15, procsShuffleReduce, true);
+			i++;
 		}
-
+		
+		for (Process proc : procsShuffleReduce){
+			try {
+				proc.waitFor();
+			} catch (InterruptedException e) {
+				e.printStackTrace();
+			}
+		}
+		
+		System.out.println("SHUFFLE and REDUCE phases done.");
+		
+		long redTime   = System.currentTimeMillis();
+		System.out.println("SHUFFLE and REDUCE time: " + (redTime - mapTime) + "ms");
+		
+		//******************************************************************
+		//**************** SHUFFLE REDUCE PHASE ENDED **********************
+		//******************************************************************
+		
+		i = 0;
+		for (String word : working)
+		{
+			ProcessBuilder pb = new ProcessBuilder("scp", 
+					"-pr",
+					"blupiac@" + word + ":/tmp/blupiac/output/RM.txt",
+					"output/RM" + i + ".txt");
+			
+			runProcess(pb, 5, dummy, true);
+			
+			i++;
+		}
+		
+		try {
+			PrintWriter RESULTout = new PrintWriter("output/RESULT.txt");
+			
+			for(i = 0 ; i < working.size() ; i++)
+			{
+				RESULTout.println(readFile("output/RM" + i + ".txt"));
+			}
+			
+			RESULTout.close();
+			
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
 		
 		long endTime   = System.currentTimeMillis();
 		System.out.println("Total time: " + (endTime - startTime) + "ms");
 
 	}
-
+	
 	private static void updateDictKeys(List<String> keys, String value)
 	{
 		for (String key : keys) {
@@ -179,7 +249,7 @@ public class main {
 	private static void printDictKeys(HashMap<String, List<String> > dictKeys, PrintWriter pw)
 	{
 		for (Entry<String, List<String> > e : dictKeys.entrySet()) {
-		    pw.println("Word: " + e.getKey() + ", Machines: " + e.getValue());			
+		    pw.println(e.getKey() + " " + e.getValue());			
 		}
 	}
 	
@@ -187,11 +257,10 @@ public class main {
 	private static String readFile(String path) 
 			throws IOException 
 	{
-		byte[] encoded = Files.readAllBytes(Paths.get(path));
-		return new String(encoded);
+		return new String(Files.readAllBytes(Paths.get(path)));
 	}
 
-	private static List<String> runProcess(ProcessBuilder p, long TIMEOUT, ArrayList<Process> procs)
+	private static List<String> runProcess(ProcessBuilder p, long TIMEOUT, ArrayList<Process> procs, boolean verbose)
 	{
 		List<String> result = new ArrayList<String>();
 
@@ -220,7 +289,7 @@ public class main {
 				while( (stdOut = standardBQ.poll(TIMEOUT, TimeUnit.SECONDS)) != null &&
 						stdOut != "EOF")
 				{
-					System.out.println(stdOut);
+					if(verbose)	System.out.println(stdOut);
 					result.add(stdOut);
 				}
 
@@ -234,7 +303,7 @@ public class main {
 				if(stdOut == null || errOut == null)
 				{
 					System.err.println("Timeout reached.");
-					result.add("Timeout reached.");
+					result.add("Timeout reached on: " + p.toString());
 					return result;
 				}
 
@@ -251,7 +320,7 @@ public class main {
 
 	}
 
-	private static void createSplits(int fragments, String inputPath)
+	private static void createSplits(int fragments, String inputPath, char separator, String target)
 	{
 		String fileContent = null;
 
@@ -261,13 +330,13 @@ public class main {
 			e.printStackTrace();
 		}
 
-		int[] sep = splitString(fragments, fileContent);
-
+		int[] sep = splitString(fragments, fileContent, separator);
+				
 		for(int i = 0; i < fragments; i++)
 		{
 			try {
 
-				PrintWriter out = new PrintWriter("output/S" + i + ".spl");
+				PrintWriter out = new PrintWriter(target + i + ".spl");
 				out.println(fileContent.substring(sep[i], sep[i+1]));
 				out.close();
 
@@ -277,7 +346,7 @@ public class main {
 		}
 	}
 
-	private static int[] splitString(int fragments, String s)
+	private static int[] splitString(int fragments, String s, char separator)
 	{
 		int size = s.length();
 
@@ -287,7 +356,7 @@ public class main {
 		for(int i = 1; i < fragments; i++)
 		{
 			result[i] = i * size / fragments;
-			while(s.charAt(result[i]) != ' ')
+			while(s.charAt(result[i]) != separator)
 				result[i]--;
 		}
 
@@ -295,7 +364,5 @@ public class main {
 
 		return result;
 	}
-
-
 
 }
