@@ -20,21 +20,24 @@ import java.util.concurrent.Future;
 public class main implements Runnable{
 
 	private String fileContent;
-	static ArrayList<String> path;
+	static ArrayList<String> path = new ArrayList<String>();
 	static int mode;
 	private static HashMap<String, Integer> count = new HashMap<String, Integer>();
 	private ArrayList<String> words;
 
 	public void run() {
-
-		try {
-			fileContent = readFile(path.get(0));
-		} catch (IOException e) {
-			e.printStackTrace();
+		
+		if(mode == 0)
+		{
+			try {
+				fileContent = readFile(path.get(0));
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
+	
+			countWordsParallel();
+			writeOutput();
 		}
-
-		countWordsParallel();
-		writeOutput();
 	}
 
 	// http://stackoverflow.com/questions/326390/how-do-i-create-a-java-string-from-the-contents-of-a-file
@@ -182,19 +185,24 @@ public class main implements Runnable{
 		main obj = new main();
 		Thread tobj =new Thread(obj);
 		
-		if(args[1].equals("0"))
+		if(args[0].equals("0"))
 		{
 			mode = 0;
 		}
-		else
+		else if(args[0].equals("1"))
 		{
 			mode = 1;
 		}
-		
-		int i = 0;
-		while(args[i+1] != null)
+		else
 		{
-			path.add(args[i+1]);
+			System.err.println("Mode entered in command argument not recognized.");
+		}
+		
+		int i = 1;
+		while(i < args.length)
+		{
+			path.add(args[i]);
+			i++;
 		}
 		
 		tobj.start();
