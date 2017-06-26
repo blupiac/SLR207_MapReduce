@@ -1,12 +1,19 @@
+import java.io.ByteArrayOutputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.PrintStream;
 import java.io.PrintWriter;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Set;
 import java.util.Map.Entry;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
@@ -15,9 +22,13 @@ import java.util.concurrent.TimeUnit;
 
 public class main {
 
-	private static String inputFile = "allDreams.txt";
+	private static String inputFile = "santPub.txt";
 	private static String fileContent;
 	private static HashMap<String, List<String>> dictKeys = new HashMap<String, List<String>>();
+	
+	// http://www.java67.com/2015/01/how-to-sort-hashmap-in-java-based-on.html
+	static LinkedHashMap<String, Integer> sorted;
+	private static HashMap<String, Integer> result = new HashMap<String, Integer>();
 	
 	public static void main(String[] args)
 	{
@@ -211,11 +222,30 @@ public class main {
 		
 		try {
 			PrintWriter RESULTout = new PrintWriter("output/RESULT.txt");
-			
+			ByteArrayOutputStream baos = new ByteArrayOutputStream();
+			PrintStream ps = new PrintStream(baos);
+						
 			for(i = 0 ; i < working.size() ; i++)
 			{
-				RESULTout.println(readFile("output/RM" + i + ".txt"));
+				String s = readFile("output/RM" + i + ".txt");
+				RESULTout.println(s);
+				ps.println(s);
 			}
+			
+			String content = new String(baos.toByteArray(), StandardCharsets.UTF_8);
+			String[] allLines = content.split("\\r?\\n");
+			
+			for(String line : allLines)
+			{
+				if(line.split("\\s+").length > 1)
+				{
+					String[] entryStrings = line.split("\\s+");
+					result.put(entryStrings[0], Integer.parseInt(entryStrings[1]));
+				}
+			}
+			
+			sortResult();
+			showResult(true,50);
 			
 			RESULTout.close();
 			
@@ -227,6 +257,21 @@ public class main {
 		System.out.println("Total time: " + (endTime - startTime) + "ms");
 
 	}
+	
+	static Comparator<Entry<String, Integer>> valueComparator = new Comparator<Entry<String,Integer>>()
+	{ 
+		public int compare(Entry<String, Integer> e1, Entry<String, Integer> e2)
+		{
+			int v1 = e1.getValue();
+			int v2 = e2.getValue();
+			String k1 = e1.getKey();
+			String k2 = e2.getKey();
+			
+			if (v1 < v2)					return 1;
+			else if (v1 > v2)				return -1;
+			else return k1.compareTo(k2);	// v1 == v2
+		}
+	};
 	
 	private static void updateDictKeys(List<String> keys, String value)
 	{
@@ -363,6 +408,47 @@ public class main {
 		result[fragments] = size;
 
 		return result;
+	}
+	
+	public static void sortResult()
+	{
+		List<Entry<String, Integer>> listOfEntries = new ArrayList<Entry<String, Integer>>(result.entrySet());
+		
+		Collections.sort(listOfEntries, valueComparator);
+		sorted = new LinkedHashMap<String, Integer>(listOfEntries.size());
+		
+		for(Entry<String, Integer> entry : listOfEntries)
+		{
+			sorted.put(entry.getKey(), entry.getValue());
+		}
+	}
+	
+	// ordered: if results need to be ordered
+	// numShown: number of entries to be shown, 0 shows all entries
+	public static void showResult(boolean ordered, int numShown)
+	{
+		HashMap<String, Integer> target = new HashMap<String, Integer>();
+		int i = 0;
+		
+		if(ordered)
+		{
+			target = sorted;
+		}
+		else
+		{
+			target = result;
+		}
+		
+		for (String name: target.keySet())
+		{
+			System.out.println(name + " : " + target.get(name));
+			i++;
+			
+			if(i == numShown)
+			{
+				break;
+			}
+		}
 	}
 
 }
